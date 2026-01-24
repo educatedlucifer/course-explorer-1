@@ -1,0 +1,4 @@
+project_id = "wpczgwxsriezaubncuom"
+
+[functions.study-api]
+verify_jwt = false

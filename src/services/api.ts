@@ -1,3 +1,4 @@
+import { supabase } from '@/integrations/supabase/client';
 import { 
   MasterCategory, 
   SubCategory, 
@@ -10,57 +11,88 @@ import {
   ApiResponse 
 } from '@/types/api';
 
-const BATCHES_API = 'https://utk-batches-apih-45a803b3037e.herokuapp.com/api';
-const WEB_API = 'https://utk-web-api-5163e92c9014.herokuapp.com/api';
+async function callApi<T>(params: Record<string, string>): Promise<T> {
+  const queryString = new URLSearchParams(params).toString();
+  
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-api?${queryString}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.statusText}`);
+  }
+  
+  return response.json();
+}
 
 export async function fetchMasterCategories(): Promise<MasterCategory[]> {
-  const response = await fetch(`${BATCHES_API}/master-categories`);
-  const data: ApiResponse<MasterCategory[]> = await response.json();
+  const data: ApiResponse<MasterCategory[]> = await callApi({ endpoint: 'master-categories' });
   return data.data;
 }
 
 export async function fetchSubCategories(masterId: number): Promise<SubCategory[]> {
-  const response = await fetch(`${BATCHES_API}/subcategories?master_id=${masterId}`);
-  const data: ApiResponse<SubCategory[]> = await response.json();
+  const data: ApiResponse<SubCategory[]> = await callApi({ 
+    endpoint: 'subcategories',
+    master_id: masterId.toString()
+  });
   return data.data;
 }
 
 export async function fetchFinalCategories(subcatId: string): Promise<FinalCategory[]> {
-  const response = await fetch(`${BATCHES_API}/final-categories?subcat_id=${subcatId}`);
-  const data: ApiResponse<FinalCategory[]> = await response.json();
+  const data: ApiResponse<FinalCategory[]> = await callApi({ 
+    endpoint: 'final-categories',
+    subcat_id: subcatId
+  });
   return data.data;
 }
 
 export async function fetchCourses(masterId: number, catId: string, subCatId: string): Promise<Course[]> {
-  const response = await fetch(
-    `${BATCHES_API}/courses?master_id=${masterId}&cat_id=${catId}&sub_cat_id=${subCatId}`
-  );
-  const data: ApiResponse<Course[]> = await response.json();
+  const data: ApiResponse<Course[]> = await callApi({ 
+    endpoint: 'courses',
+    master_id: masterId.toString(),
+    cat_id: catId,
+    sub_cat_id: subCatId
+  });
   return data.data;
 }
 
 export async function fetchBatch(batchId: string): Promise<BatchData> {
-  const response = await fetch(`${WEB_API}/batch/${batchId}`);
-  const data: ApiResponse<BatchData> = await response.json();
+  const data: ApiResponse<BatchData> = await callApi({ 
+    endpoint: 'batch',
+    batch_id: batchId
+  });
   return data.data;
 }
 
 export async function fetchSubjects(courseId: string): Promise<Subject[]> {
-  const response = await fetch(`${WEB_API}/course/${courseId}/subjects`);
-  const data: ApiResponse<Subject[]> = await response.json();
+  const data: ApiResponse<Subject[]> = await callApi({ 
+    endpoint: 'subjects',
+    course_id: courseId
+  });
   return data.data;
 }
 
 export async function fetchTopics(courseId: string, subjectId: string): Promise<Topic[]> {
-  const response = await fetch(`${WEB_API}/course/${courseId}/subject/${subjectId}/topics`);
-  const data: ApiResponse<Topic[]> = await response.json();
+  const data: ApiResponse<Topic[]> = await callApi({ 
+    endpoint: 'topics',
+    course_id: courseId,
+    subject_id: subjectId
+  });
   return data.data;
 }
 
 export async function fetchContent(courseId: string, subjectId: string, topicId: string): Promise<Content[]> {
-  const response = await fetch(
-    `${WEB_API}/course/${courseId}/subject/${subjectId}/topic/${topicId}/content`
-  );
-  const data: ApiResponse<Content[]> = await response.json();
+  const data: ApiResponse<Content[]> = await callApi({ 
+    endpoint: 'content',
+    course_id: courseId,
+    subject_id: subjectId,
+    topic_id: topicId
+  });
   return data.data;
 }
