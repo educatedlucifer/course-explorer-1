@@ -12,7 +12,9 @@ import {
   Star,
   Play,
   Layers,
-  Target
+  Target,
+  Home,
+  Zap
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -247,31 +249,37 @@ export function StudyApp() {
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background Effects */}
       <div className="fixed inset-0 bg-mesh-gradient pointer-events-none" />
-      <div className="fixed top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="fixed bottom-1/4 right-1/4 w-[400px] h-[400px] bg-accent/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="fixed top-1/3 left-1/4 w-[600px] h-[600px] bg-primary/15 rounded-full blur-[150px] pointer-events-none animate-pulse" />
+      <div className="fixed bottom-1/3 right-1/4 w-[500px] h-[500px] bg-secondary/15 rounded-full blur-[130px] pointer-events-none animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="fixed top-1/2 left-1/2 w-[400px] h-[400px] bg-accent/10 rounded-full blur-[100px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
       
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-border/50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <motion.div 
-              className="flex items-center gap-3"
+              className="flex items-center gap-3 cursor-pointer"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
+              onClick={() => goToStep('master', 0)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                <GraduationCap className="w-5 h-5 text-primary-foreground" />
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center glow-primary">
+                <GraduationCap className="w-6 h-6 text-primary-foreground" />
               </div>
               <span className="font-display text-xl font-bold text-gradient">StudyHub</span>
             </motion.div>
             
             <motion.div 
-              className="flex items-center gap-2 text-sm text-muted-foreground"
+              className="flex items-center gap-2 text-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <Sparkles className="w-4 h-4 text-accent" />
-              <span>India's #1 Learning Platform</span>
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20">
+                <Zap className="w-4 h-4 text-accent" />
+                <span className="text-accent font-medium">India's #1 Learning Platform</span>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -280,46 +288,69 @@ export function StudyApp() {
       {/* Main Content */}
       <main className="relative z-10 pt-24 pb-12 min-h-screen">
         <div className="container mx-auto px-4">
-          {/* Breadcrumbs */}
+          
+          {/* Enhanced Breadcrumb Navigation */}
           <motion.div 
-            className="flex items-center gap-2 mb-8 flex-wrap"
+            className="mb-8"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            {breadcrumbs.map((crumb, index) => (
-              <div key={index} className="flex items-center gap-2">
-                {index > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-                <button
-                  onClick={() => goToStep(crumb.step, index)}
-                  className={`text-sm transition-colors ${
-                    index === breadcrumbs.length - 1 
-                      ? 'text-primary font-medium' 
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {crumb.label}
-                </button>
-              </div>
-            ))}
+            <div className="flex items-center gap-1 p-2 rounded-2xl bg-card/50 backdrop-blur-sm border border-border/50 overflow-x-auto">
+              {/* Home Button */}
+              <motion.button
+                onClick={() => goToStep('master', 0)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all duration-300 flex-shrink-0 ${
+                  currentStep === 'master'
+                    ? 'bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-lg'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Home className="w-4 h-4" />
+                <span className="hidden sm:inline">Home</span>
+              </motion.button>
+
+              {breadcrumbs.slice(1).map((crumb, index) => (
+                <div key={index} className="flex items-center gap-1 flex-shrink-0">
+                  <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+                  <motion.button
+                    onClick={() => goToStep(crumb.step, index + 1)}
+                    className={`px-4 py-2.5 rounded-xl font-medium transition-all duration-300 max-w-[200px] truncate ${
+                      index === breadcrumbs.length - 2
+                        ? 'bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-lg'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {crumb.label}
+                  </motion.button>
+                </div>
+              ))}
+            </div>
           </motion.div>
 
           {/* Back Button & Title */}
           <div className="mb-10">
-            {currentStep !== 'master' && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-              >
-                <Button 
-                  variant="ghost" 
-                  onClick={goBack}
-                  className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
+            <div className="flex items-center gap-4 mb-4">
+              {currentStep !== 'master' && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
                 >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back
-                </Button>
-              </motion.div>
-            )}
+                  <motion.button 
+                    onClick={goBack}
+                    className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-muted/80 to-muted/50 border border-border/50 text-foreground font-medium hover:from-primary/20 hover:to-secondary/20 hover:border-primary/30 transition-all duration-300 group"
+                    whileHover={{ scale: 1.02, x: -3 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                    <span>Go Back</span>
+                  </motion.button>
+                </motion.div>
+              )}
+            </div>
             
             <motion.div
               key={currentStep}
@@ -327,7 +358,7 @@ export function StudyApp() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
             >
-              <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-3">
+              <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-3 text-gradient-vibrant">
                 {getStepTitle()}
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl">
@@ -344,8 +375,8 @@ export function StudyApp() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                <div className="w-12 h-12 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-                <p className="text-muted-foreground">Loading...</p>
+                <div className="w-14 h-14 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+                <p className="text-muted-foreground font-medium">Loading amazing content...</p>
               </motion.div>
             </div>
           )}
@@ -363,27 +394,33 @@ export function StudyApp() {
                   exit="exit"
                   className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
                 >
-                  {masterCategories.map((cat) => (
+                  {masterCategories.map((cat, index) => (
                     <motion.div key={cat.id} variants={itemVariants}>
-                      <Card 
-                        variant="interactive"
-                        className="group cursor-pointer h-full"
+                      <motion.div
+                        className="group cursor-pointer h-full rounded-2xl bg-gradient-to-br from-card via-card to-muted/30 border border-border/50 hover:border-primary/50 transition-all duration-500 overflow-hidden relative"
                         onClick={() => handleMasterSelect(cat)}
+                        whileHover={{ scale: 1.03, y: -5 }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        <CardContent className="p-6 flex flex-col items-center text-center">
+                        {/* Gradient overlay on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-secondary/0 to-accent/0 group-hover:from-primary/10 group-hover:via-secondary/5 group-hover:to-accent/10 transition-all duration-500" />
+                        
+                        <div className="p-6 flex flex-col items-center text-center relative z-10">
                           <motion.div 
-                            className="text-5xl mb-4"
-                            whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
-                            transition={{ duration: 0.4 }}
+                            className="text-5xl mb-4 drop-shadow-lg"
+                            whileHover={{ scale: 1.3, rotate: [0, -15, 15, 0] }}
+                            transition={{ duration: 0.5 }}
                           >
                             {getCategoryIcon(cat.name)}
                           </motion.div>
                           <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">
                             {cat.name}
                           </h3>
-                          <ChevronRight className="w-4 h-4 mt-3 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                        </CardContent>
-                      </Card>
+                          <div className="mt-3 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all">
+                            <ChevronRight className="w-4 h-4 text-primary group-hover:translate-x-0.5 transition-transform" />
+                          </div>
+                        </div>
+                      </motion.div>
                     </motion.div>
                   ))}
                 </motion.div>
@@ -399,25 +436,26 @@ export function StudyApp() {
                   exit="exit"
                   className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
                 >
-                  {subCategories.map((cat) => (
+                  {subCategories.map((cat, index) => (
                     <motion.div key={cat.id} variants={itemVariants}>
-                      <Card 
-                        variant="interactive"
-                        className="group cursor-pointer"
+                      <motion.div
+                        className="group cursor-pointer rounded-xl bg-gradient-to-r from-card to-muted/20 border border-border/50 hover:border-accent/50 transition-all duration-300 overflow-hidden"
                         onClick={() => handleSubSelect(cat)}
+                        whileHover={{ scale: 1.02, x: 5 }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        <CardContent className="p-5 flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
+                        <div className="p-5 flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center flex-shrink-0 group-hover:from-accent/30 group-hover:to-accent/10 transition-all">
                             <Target className="w-6 h-6 text-accent" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-sm group-hover:text-primary transition-colors truncate">
+                            <h3 className="font-semibold text-sm group-hover:text-accent transition-colors truncate">
                               {cat.name}
                             </h3>
                           </div>
-                          <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
-                        </CardContent>
-                      </Card>
+                          <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-accent group-hover:translate-x-1 transition-all flex-shrink-0" />
+                        </div>
+                      </motion.div>
                     </motion.div>
                   ))}
                 </motion.div>
