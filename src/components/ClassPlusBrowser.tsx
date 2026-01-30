@@ -421,8 +421,11 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
               <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={goBack}>
+                    <Button variant="ghost" size="icon" onClick={goBack} title="Change Organization">
                       <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={onBack} title="Back to Home">
+                      <Home className="w-5 h-5" />
                     </Button>
                     <div>
                       <span className="text-xs text-muted-foreground">Organization</span>
@@ -472,11 +475,10 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
                       whileTap={{ scale: 0.98 }}
                     >
                       <Card
-                        variant="interactive"
-                        className="h-full cursor-pointer"
+                        className="h-full cursor-pointer hover:border-primary/50 hover:shadow-xl"
                         onClick={() => openBatch(batch)}
                       >
-                        <div className="aspect-video bg-muted overflow-hidden">
+                        <div className="aspect-video bg-muted overflow-hidden rounded-t-xl">
                           {batch.thumbnail ? (
                             <img
                               src={batch.thumbnail}
@@ -484,13 +486,14 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
                               className="w-full h-full object-contain bg-muted"
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';
+                                const placeholder = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (placeholder) placeholder.style.display = 'flex';
                               }}
                             />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-500/20">
-                              <GraduationCap className="w-12 h-12 text-muted-foreground/50" />
-                            </div>
-                          )}
+                          ) : null}
+                          <div className={`w-full h-full items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-500/20 ${batch.thumbnail ? 'hidden' : 'flex'}`}>
+                            <GraduationCap className="w-12 h-12 text-muted-foreground/50" />
+                          </div>
                         </div>
                         <CardContent className="p-4">
                           <h3 className="font-semibold line-clamp-2 mb-2" title={batch.name}>
@@ -522,8 +525,11 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
             <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-xl border-b border-border">
               <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center gap-4">
-                  <Button variant="ghost" size="icon" onClick={goBack}>
+                  <Button variant="ghost" size="icon" onClick={goBack} title="Go Back">
                     <ArrowLeft className="w-5 h-5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={onBack} title="Back to Home">
+                    <Home className="w-5 h-5" />
                   </Button>
                   
                   {/* Breadcrumbs */}
@@ -536,7 +542,7 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
                           className={`px-2 py-1 rounded text-sm whitespace-nowrap ${
                             index === navigationStack.length - 1
                               ? 'font-medium text-foreground'
-                              : 'text-muted-foreground hover:text-foreground'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                           }`}
                         >
                           {item.name.length > 20 ? item.name.substring(0, 20) + '...' : item.name}
