@@ -19,7 +19,6 @@ import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
 
 interface Batch {
   id: number;
@@ -74,6 +73,18 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
     return `https://${projectId}.supabase.co/functions/v1/classplus-api`;
   };
 
+  const getApiHeaders = () => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (supabaseKey) {
+      headers.apikey = supabaseKey;
+      headers.Authorization = `Bearer ${supabaseKey}`;
+    }
+    return headers;
+  };
+
   // Check for stored org code on mount
   useEffect(() => {
     const storedOrg = localStorage.getItem('cp_org_code');
@@ -103,9 +114,12 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
 
     setLoading(true);
     setError('');
+    setOrgCode(code);
 
     try {
-      const response = await fetch(`${getApiUrl()}?action=org&orgCode=${code}`);
+      const response = await fetch(`${getApiUrl()}?action=org&orgCode=${code}`, {
+        headers: getApiHeaders(),
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -127,9 +141,11 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
 
   const loadBatches = async (code: string, hashValue: string) => {
     setLoading(true);
+    setError('');
     try {
       const response = await fetch(
-        `${getApiUrl()}?action=batches&orgCode=${code}&hash=${encodeURIComponent(hashValue)}`
+        `${getApiUrl()}?action=batches&orgCode=${code}&hash=${encodeURIComponent(hashValue)}`,
+        { headers: getApiHeaders() }
       );
       const data = await response.json();
 
@@ -141,6 +157,8 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
       setFilteredBatches(data.batches || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load courses');
+      setBatches([]);
+      setFilteredBatches([]);
     } finally {
       setLoading(false);
     }
@@ -148,13 +166,15 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
 
   const openBatch = async (batch: Batch) => {
     setLoading(true);
+    setError('');
     setCurrentBatch(batch);
     setNavigationStack([{ id: 0, name: batch.name, type: 'root' }]);
 
     try {
       // Get batch token first
       const tokenResponse = await fetch(
-        `${getApiUrl()}?action=batch-token&orgCode=${orgCode}&courseId=${batch.id}`
+        `${getApiUrl()}?action=batch-token&orgCode=${orgCode}&courseId=${batch.id}`,
+        { headers: getApiHeaders() }
       );
       const tokenData = await tokenResponse.json();
 
@@ -175,9 +195,11 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
 
   const loadContent = async (batchToken: string, folderId: number) => {
     setLoading(true);
+    setError('');
     try {
       const response = await fetch(
-        `${getApiUrl()}?action=content&batchToken=${batchToken}&folderId=${folderId}`
+        `${getApiUrl()}?action=content&batchToken=${batchToken}&folderId=${folderId}`,
+        { headers: getApiHeaders() }
       );
       const data = await response.json();
 
@@ -249,7 +271,8 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
 
     try {
       const signedRes = await fetch(
-        `${getApiUrl()}?action=signed-url&url=${encodeURIComponent(currentVideo.url)}`
+        `${getApiUrl()}?action=signed-url&url=${encodeURIComponent(currentVideo.url)}`,
+        { headers: getApiHeaders() }
       );
       const signedData = await signedRes.json();
       const signedUrl = signedData.signedUrl || currentVideo.url;
@@ -447,12 +470,38 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
             </header>
 
             {/* Stats bar */}
-            <div className="container mx-auto px-4 py-3 text-sm text-muted-foreground">
-              {filteredBatches.length} of {batches.length} courses
+            <div className="container mx-auto px-4 py-3 text-sm text-muted-foreground flex flex-wrap items-center justify-between gap-3">
+              <div>
+                {filteredBatches.length} of {batches.length} courses
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={goBack}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Change Organization
+                </Button>
+                <Button variant="outline" size="sm" onClick={onBack}>
+                  <Home className="w-4 h-4 mr-2" />
+                  Back to Home
+                </Button>
+              </div>
             </div>
 
             {/* Content */}
             <div className="container mx-auto px-4 pb-8">
+              {error && (
+                <div className="mb-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive">
+                  <p className="font-medium">Unable to load courses.</p>
+                  <p className="text-sm mt-1">{error}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => loadBatches(orgCode, hash)}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              )}
               {loading ? (
                 <div className="flex items-center justify-center py-20">
                   <div className="flex flex-col items-center gap-4">
@@ -556,8 +605,22 @@ export function ClassPlusBrowser({ onBack }: ClassPlusBrowserProps) {
 
             {/* Folder info */}
             <div className="container mx-auto px-4 py-4 border-b border-border/50">
-              <h3 className="font-semibold">{navigationStack[navigationStack.length - 1]?.name || 'Content'}</h3>
-              <span className="text-sm text-muted-foreground">{contents.length} items</span>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-semibold">{navigationStack[navigationStack.length - 1]?.name || 'Content'}</h3>
+                  <span className="text-sm text-muted-foreground">{contents.length} items</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={goBack}>
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Courses
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={onBack}>
+                    <Home className="w-4 h-4 mr-2" />
+                    Back to Home
+                  </Button>
+                </div>
+              </div>
             </div>
 
             {/* Content list */}
