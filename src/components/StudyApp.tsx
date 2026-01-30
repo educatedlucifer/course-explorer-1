@@ -43,7 +43,7 @@ import {
   FullCourseContent
 } from '@/types/api';
 
-type Step = 'welcome' | 'classplus' | 'master' | 'sub' | 'final' | 'courses' | 'subjects' | 'topics' | 'content' | 'all-content';
+type Step = 'welcome' | 'classplus' | 'unacademy' | 'master' | 'sub' | 'final' | 'courses' | 'subjects' | 'topics' | 'content' | 'all-content';
 
 interface BreadcrumbItem {
   step: Step;
@@ -251,6 +251,7 @@ export function StudyApp() {
   const getStepTitle = () => {
     switch (currentStep) {
       case 'welcome': return 'Welcome';
+      case 'unacademy': return 'Unacademy';
       case 'master': return 'Choose Your Exam Category';
       case 'sub': return 'Select Region / Stream';
       case 'final': return 'Select Your Exam';
@@ -266,6 +267,7 @@ export function StudyApp() {
   const getStepDescription = () => {
     switch (currentStep) {
       case 'welcome': return '';
+      case 'unacademy': return 'Explore Unacademy Advance';
       case 'master': return 'Start your preparation journey by selecting your target examination category';
       case 'sub': return 'Choose your preferred region or exam stream';
       case 'final': return 'Select the specific exam you want to prepare for';
@@ -518,7 +520,7 @@ export function StudyApp() {
                     <motion.div
                       whileHover={{ scale: 1.05, y: -10 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => window.location.assign('/unacademy/index.html')}
+                      onClick={() => setCurrentStep('unacademy')}
                       className="cursor-pointer"
                     >
                       <Card variant="interactive" className="w-80 md:w-96 overflow-hidden group">
@@ -571,6 +573,33 @@ export function StudyApp() {
                   className="fixed inset-0 z-50 overflow-y-auto"
                 >
                   <ClassPlusBrowser onBack={() => setCurrentStep('welcome')} />
+                </motion.div>
+              )}
+
+              {/* Unacademy Browser */}
+              {currentStep === 'unacademy' && (
+                <motion.div
+                  key="unacademy"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 bg-background"
+                >
+                  <div className="absolute top-6 left-6 z-50">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setCurrentStep('welcome')}
+                      className="gap-2"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Back
+                    </Button>
+                  </div>
+                  <iframe
+                    title="Unacademy Advance"
+                    src="/unacademy/index.html"
+                    className="w-full h-full border-0"
+                  />
                 </motion.div>
               )}
 
