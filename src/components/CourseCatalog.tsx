@@ -7,6 +7,7 @@ import { fetchMasterCategories, fetchSubCategories, fetchFinalCategories, fetchC
 import { MasterCategory, SubCategory, FinalCategory, Course } from '@/types/api';
 
 export function CourseCatalog() {
+  const [showCatalog, setShowCatalog] = useState(false);
   const [masterCategories, setMasterCategories] = useState<MasterCategory[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [finalCategories, setFinalCategories] = useState<FinalCategory[]>([]);
@@ -65,6 +66,69 @@ export function CourseCatalog() {
     return '📖';
   };
 
+  // Welcome card view
+  if (!showCatalog) {
+    return (
+      <section className="py-20 relative min-h-[60vh] flex items-center justify-center" id="courses">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/20 to-background" />
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center"
+          >
+            <motion.div
+              whileHover={{ scale: 1.05, y: -10 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowCatalog(true)}
+              className="cursor-pointer"
+            >
+              <Card variant="interactive" className="w-80 md:w-96 overflow-hidden group">
+                <div className="relative h-48 bg-gradient-to-br from-primary via-primary/80 to-accent flex items-center justify-center">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent)]" />
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.3, type: "spring" }}
+                    className="w-24 h-24 rounded-full bg-card/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center"
+                  >
+                    <span className="text-4xl font-bold text-white">U</span>
+                  </motion.div>
+                </div>
+                
+                <CardHeader className="text-center pb-2">
+                  <CardTitle className="text-2xl md:text-3xl font-bold text-gradient">
+                    Utkarsh
+                  </CardTitle>
+                </CardHeader>
+                
+                <CardContent className="text-center space-y-4 pb-8">
+                  <p className="text-muted-foreground">
+                    Your Gateway to Success
+                  </p>
+                  <div className="flex items-center justify-center gap-2 text-primary">
+                    <span className="text-sm font-medium">Click to Explore Courses</span>
+                    <ArrowRight className="w-4 h-4 animate-pulse" />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+            
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-8 text-muted-foreground text-center"
+            >
+              Tap the card to begin your learning journey
+            </motion.p>
+          </motion.div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-20 relative" id="courses">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/20 to-background" />
@@ -72,8 +136,7 @@ export function CourseCatalog() {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
           <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-sm font-medium text-primary mb-4">
