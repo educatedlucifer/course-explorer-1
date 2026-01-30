@@ -296,19 +296,18 @@ function CourseCard({ course, index }: { course: Course; index: number }) {
     >
       <Card variant="interactive" className="h-full group overflow-hidden">
         {/* Course Image */}
-        <div className="relative h-48 overflow-hidden">
+        <div className="relative h-48 overflow-hidden bg-muted">
           {course.cover_image ? (
             <img
               src={course.cover_image}
               alt={course.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
               <BookOpen className="w-12 h-12 text-primary/50" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
           
           {/* Badge */}
           <div className="absolute top-4 left-4 flex gap-2">
