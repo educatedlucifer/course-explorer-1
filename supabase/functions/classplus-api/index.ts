@@ -232,22 +232,69 @@ serve(async (req) => {
       };
 
       let allCourses: any[] = [];
+      // NOTE: The upstream API can return fewer items than requested even when more pages exist.
+      // So we must NOT stop just because courses.length < requestedLimit.
       let page = 0;
-      const pageSize = 100;
+      const requestedLimit = 100;
+      const maxPages = 100; // safety cap
+      const seenIds = new Set<number>();
+      let triedOneIndexedFallback = false;
 
-      while (true) {
+      while (page < maxPages) {
         const response = await fetch(
-          `https://api.classplusapp.com/v2/course/preview/similar/${hash}?limit=${pageSize}&page=${page}`,
+          `https://api.classplusapp.com/v2/course/preview/similar/${hash}?limit=${requestedLimit}&page=${page}`,
           { headers }
         );
+
+        if (!response.ok) {
+          console.log(`batches fetch not ok: ${response.status}`);
+          break;
+        }
+
         const data = await response.json();
-        
-        const courses = data?.data?.coursesData || [];
+
+        // Safely extract courses from a few known wrapper shapes.
+        const courses =
+          data?.data?.coursesData ||
+          data?.data?.courses ||
+          data?.coursesData ||
+          data?.courses ||
+          [];
+
+        // Some orgs appear to be 1-indexed (page starts at 1). If page=0 returns empty, retry with 1.
+        if (page === 0 && courses.length === 0 && !triedOneIndexedFallback) {
+          triedOneIndexedFallback = true;
+          page = 1;
+          continue;
+        }
+
         if (courses.length === 0) break;
-        
-        allCourses = allCourses.concat(courses);
-        if (courses.length < pageSize) break;
+
+        let added = 0;
+        for (const c of courses) {
+          const id = c?.id;
+          if (typeof id === 'number') {
+            if (seenIds.has(id)) continue;
+            seenIds.add(id);
+          }
+          allCourses.push(c);
+          added++;
+        }
+
+        // If API provides total, stop once we reached it.
+        const total = data?.data?.total || data?.data?.totalCount || data?.total || null;
+        if (typeof total === 'number' && total > 0 && allCourses.length >= total) {
+          break;
+        }
+
+        // No progress -> avoid potential infinite loop.
+        if (added === 0) break;
+
         page++;
+      }
+
+      if (page >= maxPages) {
+        console.log(`Reached maxPages=${maxPages} for orgCode=${orgCode}, hash=${hash}`);
       }
 
       return new Response(JSON.stringify({
