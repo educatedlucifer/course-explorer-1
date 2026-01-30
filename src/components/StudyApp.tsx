@@ -298,7 +298,7 @@ export function StudyApp() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-x-hidden">
       {/* Background Effects */}
       <div className="fixed inset-0 bg-mesh-gradient pointer-events-none" />
       <div className="fixed top-1/3 left-1/4 w-[600px] h-[600px] bg-primary/15 rounded-full blur-[150px] pointer-events-none animate-pulse" />
