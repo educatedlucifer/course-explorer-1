@@ -533,7 +533,7 @@ export function StudyApp() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-50"
+                  className="fixed inset-0 z-50 overflow-y-auto"
                 >
                   <ClassPlusBrowser onBack={() => setCurrentStep('welcome')} />
                 </motion.div>
