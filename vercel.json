@@ -1,6 +1,8 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/:path*" },
+    { "source": "/api/unacademy/:path*", "destination": "/api/unacademy/:path*" },
+    { "source": "/api/study-api", "destination": "/api/study-api" },
+    { "source": "/api/:path*", "destination": "/api/unacademy/:path*" },
     { "source": "/(.*)", "destination": "/" }
   ],
   "buildCommand": "npm run build",
