@@ -5,9 +5,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const coursesStoreClient = Deno.createHttpClient({
+  dangerouslyIgnoreCertificateErrors: ['courses.store'],
+});
+
 async function fetchCoursesStoreInfo(orgCode: string): Promise<{ hash: string | null; name: string | null }> {
   try {
     const storeRes = await fetch(`https://${orgCode}.courses.store`, {
+      client: coursesStoreClient,
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -232,12 +237,9 @@ serve(async (req) => {
       };
 
       let allCourses: any[] = [];
-      // NOTE: The upstream API can return fewer items than requested even when more pages exist.
-      // So we must NOT stop just because courses.length < requestedLimit.
       let page = 0;
       const requestedLimit = 100;
       const maxPages = 100; // safety cap
-      const seenIds = new Set<number>();
       let triedOneIndexedFallback = false;
 
       while (page < maxPages) {
@@ -270,25 +272,9 @@ serve(async (req) => {
 
         if (courses.length === 0) break;
 
-        let added = 0;
-        for (const c of courses) {
-          const id = c?.id;
-          if (typeof id === 'number') {
-            if (seenIds.has(id)) continue;
-            seenIds.add(id);
-          }
-          allCourses.push(c);
-          added++;
-        }
+        allCourses = allCourses.concat(courses);
 
-        // If API provides total, stop once we reached it.
-        const total = data?.data?.total || data?.data?.totalCount || data?.total || null;
-        if (typeof total === 'number' && total > 0 && allCourses.length >= total) {
-          break;
-        }
-
-        // No progress -> avoid potential infinite loop.
-        if (added === 0) break;
+        if (courses.length < requestedLimit) break;
 
         page++;
       }
