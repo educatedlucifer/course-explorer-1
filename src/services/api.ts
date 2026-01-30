@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 import { 
   MasterCategory, 
   SubCategory, 
@@ -12,18 +11,30 @@ import {
   ApiResponse 
 } from '@/types/api';
 
+// Use Vercel API route in production, Supabase edge function in development
+function getApiBaseUrl(): string {
+  // In production (Vercel), use relative path to Vercel serverless function
+  if (import.meta.env.PROD) {
+    return '/api/study-api';
+  }
+  // In development, use Supabase edge function
+  return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-api`;
+}
+
 async function callApi<T>(params: Record<string, string>): Promise<T> {
   const queryString = new URLSearchParams(params).toString();
+  const baseUrl = getApiBaseUrl();
   
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-api?${queryString}`,
-    {
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  // Only add Supabase auth header in development
+  if (!import.meta.env.PROD) {
+    headers['Authorization'] = `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`;
+  }
+  
+  const response = await fetch(`${baseUrl}?${queryString}`, { headers });
   
   if (!response.ok) {
     throw new Error(`API request failed: ${response.statusText}`);
