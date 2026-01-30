@@ -296,12 +296,12 @@ function CourseCard({ course, index }: { course: Course; index: number }) {
     >
       <Card variant="interactive" className="h-full group overflow-hidden">
         {/* Course Image */}
-        <div className="relative h-48 overflow-hidden bg-muted">
+        <div className="relative aspect-video overflow-hidden bg-muted">
           {course.cover_image ? (
             <img
               src={course.cover_image}
               alt={course.title}
-              className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+              className="w-full h-full object-contain"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
