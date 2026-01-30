@@ -42,7 +42,7 @@ import {
   FullCourseContent
 } from '@/types/api';
 
-type Step = 'master' | 'sub' | 'final' | 'courses' | 'subjects' | 'topics' | 'content' | 'all-content';
+type Step = 'welcome' | 'master' | 'sub' | 'final' | 'courses' | 'subjects' | 'topics' | 'content' | 'all-content';
 
 interface BreadcrumbItem {
   step: Step;
@@ -52,7 +52,7 @@ interface BreadcrumbItem {
 
 
 export function StudyApp() {
-  const [currentStep, setCurrentStep] = useState<Step>('master');
+  const [currentStep, setCurrentStep] = useState<Step>('welcome');
   const [loading, setLoading] = useState(false);
   
   // Data states
@@ -75,14 +75,20 @@ export function StudyApp() {
   const [selectedContent, setSelectedContent] = useState<Content | null>(null);
 
   // Breadcrumb
-  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([{ step: 'master', label: 'Categories' }]);
+  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([{ step: 'welcome', label: 'Home' }]);
 
-  useEffect(() => {
+  const loadMasterCategories = async () => {
     setLoading(true);
-    fetchMasterCategories()
-      .then(setMasterCategories)
-      .finally(() => setLoading(false));
-  }, []);
+    const data = await fetchMasterCategories();
+    setMasterCategories(data);
+    setLoading(false);
+  };
+
+  const handleWelcomeClick = async () => {
+    await loadMasterCategories();
+    setCurrentStep('master');
+    setBreadcrumbs([{ step: 'welcome', label: 'Home' }, { step: 'master', label: 'Categories' }]);
+  };
 
   const handleMasterSelect = async (cat: MasterCategory) => {
     setLoading(true);
@@ -173,9 +179,12 @@ export function StudyApp() {
   };
 
   const goBack = () => {
-    if (currentStep === 'sub') {
+    if (currentStep === 'master') {
+      setCurrentStep('welcome');
+      setBreadcrumbs([{ step: 'welcome', label: 'Home' }]);
+    } else if (currentStep === 'sub') {
       setCurrentStep('master');
-      setBreadcrumbs([{ step: 'master', label: 'Categories' }]);
+      setBreadcrumbs(prev => prev.slice(0, 2));
     } else if (currentStep === 'final') {
       setCurrentStep('sub');
       setBreadcrumbs(prev => prev.slice(0, 2));
@@ -203,7 +212,16 @@ export function StudyApp() {
   const goToStep = (step: Step, index: number) => {
     setCurrentStep(step);
     setBreadcrumbs(prev => prev.slice(0, index + 1));
-    if (step === 'master') {
+    if (step === 'welcome') {
+      setSelectedMaster(null);
+      setSelectedSub(null);
+      setSelectedFinal(null);
+      setSelectedCourse(null);
+      setSelectedSubject(null);
+      setSelectedTopic(null);
+      setSelectedContent(null);
+    } else if (step === 'master') {
+      loadMasterCategories();
       setSelectedMaster(null);
       setSelectedSub(null);
       setSelectedFinal(null);
@@ -231,6 +249,7 @@ export function StudyApp() {
 
   const getStepTitle = () => {
     switch (currentStep) {
+      case 'welcome': return 'Welcome';
       case 'master': return 'Choose Your Exam Category';
       case 'sub': return 'Select Region / Stream';
       case 'final': return 'Select Your Exam';
@@ -245,6 +264,7 @@ export function StudyApp() {
 
   const getStepDescription = () => {
     switch (currentStep) {
+      case 'welcome': return '';
       case 'master': return 'Start your preparation journey by selecting your target examination category';
       case 'sub': return 'Choose your preferred region or exam stream';
       case 'final': return 'Select the specific exam you want to prepare for';
@@ -320,52 +340,50 @@ export function StudyApp() {
       <main className="relative z-10 pt-24 pb-12 min-h-screen">
         <div className="container mx-auto px-4">
           
-          {/* Enhanced Breadcrumb Navigation */}
-          <motion.div 
-            className="mb-8"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="flex items-center gap-1 p-2 rounded-2xl bg-card/50 backdrop-blur-sm border border-border/50 overflow-x-auto">
-              {/* Home Button */}
-              <motion.button
-                onClick={() => goToStep('master', 0)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all duration-300 flex-shrink-0 ${
-                  currentStep === 'master'
-                    ? 'bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-lg'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                }`}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Home className="w-4 h-4" />
-                <span className="hidden sm:inline">Home</span>
-              </motion.button>
+          {/* Enhanced Breadcrumb Navigation - Hidden on welcome */}
+          {currentStep !== 'welcome' && (
+            <motion.div 
+              className="mb-8"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="flex items-center gap-1 p-2 rounded-2xl bg-card/50 backdrop-blur-sm border border-border/50 overflow-x-auto">
+                {/* Home Button */}
+                <motion.button
+                  onClick={() => goToStep('welcome', 0)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all duration-300 flex-shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Home className="w-4 h-4" />
+                  <span className="hidden sm:inline">Home</span>
+                </motion.button>
 
-              {breadcrumbs.slice(1).map((crumb, index) => (
-                <div key={index} className="flex items-center gap-1 flex-shrink-0">
-                  <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
-                  <motion.button
-                    onClick={() => goToStep(crumb.step, index + 1)}
-                    className={`px-4 py-2.5 rounded-xl font-medium transition-all duration-300 max-w-[200px] truncate ${
-                      index === breadcrumbs.length - 2
-                        ? 'bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-lg'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {crumb.label}
-                  </motion.button>
-                </div>
-              ))}
-            </div>
-          </motion.div>
+                {breadcrumbs.slice(1).map((crumb, index) => (
+                  <div key={index} className="flex items-center gap-1 flex-shrink-0">
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+                    <motion.button
+                      onClick={() => goToStep(crumb.step, index + 1)}
+                      className={`px-4 py-2.5 rounded-xl font-medium transition-all duration-300 max-w-[200px] truncate ${
+                        index === breadcrumbs.length - 2
+                          ? 'bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-lg'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      }`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {crumb.label}
+                    </motion.button>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-          {/* Back Button & Title */}
-          <div className="mb-10">
-            <div className="flex items-center gap-4 mb-4">
-              {currentStep !== 'master' && (
+          {/* Back Button & Title - Hidden on welcome */}
+          {currentStep !== 'welcome' && (
+            <div className="mb-10">
+              <div className="flex items-center gap-4 mb-4">
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -380,23 +398,23 @@ export function StudyApp() {
                     <span>Go Back</span>
                   </motion.button>
                 </motion.div>
-              )}
+              </div>
+              
+              <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-3 text-gradient-vibrant">
+                  {getStepTitle()}
+                </h1>
+                <p className="text-muted-foreground text-lg max-w-2xl">
+                  {getStepDescription()}
+                </p>
+              </motion.div>
             </div>
-            
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-3 text-gradient-vibrant">
-                {getStepTitle()}
-              </h1>
-              <p className="text-muted-foreground text-lg max-w-2xl">
-                {getStepDescription()}
-              </p>
-            </motion.div>
-          </div>
+          )}
 
           {/* Loading State */}
           {loading && (
@@ -415,6 +433,60 @@ export function StudyApp() {
           {/* Content */}
           {!loading && (
             <AnimatePresence mode="wait">
+              {/* Welcome Card */}
+              {currentStep === 'welcome' && (
+                <motion.div
+                  key="welcome"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="flex flex-col items-center justify-center min-h-[60vh]"
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.05, y: -10 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleWelcomeClick}
+                    className="cursor-pointer"
+                  >
+                    <Card variant="interactive" className="w-80 md:w-96 overflow-hidden group">
+                      <div className="relative h-48 bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent)]" />
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.3, type: "spring" }}
+                          className="w-24 h-24 rounded-full bg-card/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center"
+                        >
+                          <span className="text-4xl font-bold text-white">U</span>
+                        </motion.div>
+                      </div>
+                      
+                      <CardContent className="text-center py-6 space-y-4">
+                        <h2 className="text-2xl md:text-3xl font-bold text-gradient">
+                          Utkarsh
+                        </h2>
+                        <p className="text-muted-foreground">
+                          Your Gateway to Success
+                        </p>
+                        <div className="flex items-center justify-center gap-2 text-primary">
+                          <span className="text-sm font-medium">Click to Explore Courses</span>
+                          <ChevronRight className="w-4 h-4 animate-pulse" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                  
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="mt-8 text-muted-foreground text-center"
+                  >
+                    Tap the card to begin your learning journey
+                  </motion.p>
+                </motion.div>
+              )}
+
               {/* Master Categories */}
               {currentStep === 'master' && (
                 <motion.div
