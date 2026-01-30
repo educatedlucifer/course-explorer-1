@@ -22,6 +22,7 @@ import { Card, CardContent } from './ui/card';
 import { TopicContentView } from './TopicContentView';
 import { FullCourseContentView } from './FullCourseContentView';
 import { ClassPlusBrowser } from './ClassPlusBrowser';
+import { UnacademyBrowser } from './UnacademyBrowser';
 import { 
   fetchMasterCategories, 
   fetchSubCategories, 
@@ -583,23 +584,9 @@ export function StudyApp() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-50 bg-background"
+                  className="fixed inset-0 z-50 overflow-y-auto"
                 >
-                  <div className="absolute top-6 left-6 z-50">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setCurrentStep('welcome')}
-                      className="gap-2"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      Back
-                    </Button>
-                  </div>
-                  <iframe
-                    title="Unacademy Advance"
-                    src="/unacademy/index.html"
-                    className="w-full h-full border-0"
-                  />
+                  <UnacademyBrowser onBack={() => setCurrentStep('welcome')} />
                 </motion.div>
               )}
 
