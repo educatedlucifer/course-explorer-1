@@ -5,8 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const BATCHES_API = 'https://utk-batches-apih-45a803b3037e.herokuapp.com/api';
-const WEB_API = 'https://utk-web-api-5163e92c9014.herokuapp.com/api';
+const BATCHES_API = 'https://utk-batches-api-63bad375dd0d.herokuapp.com/api';
+const CONTENT_API = 'https://utk-web-api-5163e92c9014.herokuapp.com/api';
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -48,22 +48,22 @@ serve(async (req) => {
         break;
       case 'batch':
         const batchId = url.searchParams.get('batch_id');
-        apiUrl = `${WEB_API}/batch/${batchId}`;
+        apiUrl = `${CONTENT_API}/batch/${batchId}`;
         break;
       case 'subjects':
         const courseId = url.searchParams.get('course_id');
-        apiUrl = `${WEB_API}/course/${courseId}/subjects`;
+        apiUrl = `${CONTENT_API}/course/${courseId}/subjects`;
         break;
       case 'topics':
         const cId = url.searchParams.get('course_id');
         const subjectId = url.searchParams.get('subject_id');
-        apiUrl = `${WEB_API}/course/${cId}/subject/${subjectId}/topics`;
+        apiUrl = `${CONTENT_API}/course/${cId}/subject/${subjectId}/topics`;
         break;
       case 'content':
         const courseIdC = url.searchParams.get('course_id');
         const subjectIdC = url.searchParams.get('subject_id');
         const topicId = url.searchParams.get('topic_id');
-        apiUrl = `${WEB_API}/course/${courseIdC}/subject/${subjectIdC}/topic/${topicId}/content`;
+        apiUrl = `${CONTENT_API}/course/${courseIdC}/subject/${subjectIdC}/topic/${topicId}/content`;
         break;
       default:
         return new Response(
