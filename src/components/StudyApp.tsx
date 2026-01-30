@@ -313,7 +313,7 @@ export function StudyApp() {
               className="flex items-center gap-3 cursor-pointer"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              onClick={() => goToStep('master', 0)}
+              onClick={() => goToStep('welcome', 0)}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
