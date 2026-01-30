@@ -44,6 +44,24 @@ export interface Content {
   url: string;
 }
 
+// Full course structure returned by course-content endpoint
+export interface CourseContentTopic {
+  id: string;
+  name: string;
+  contents: Content[];
+}
+
+export interface CourseContentSubject {
+  id: string;
+  name: string;
+  topics: CourseContentTopic[];
+}
+
+export interface FullCourseContent {
+  course_id: string;
+  subjects: CourseContentSubject[];
+}
+
 export interface ApiResponse<T> {
   status: string;
   data: T;

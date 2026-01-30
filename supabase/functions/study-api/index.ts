@@ -65,6 +65,106 @@ serve(async (req) => {
         const topicId = url.searchParams.get('topic_id');
         apiUrl = `${CONTENT_API}/course/${courseIdC}/subject/${subjectIdC}/topic/${topicId}/content`;
         break;
+
+      case 'course-content': {
+        // Full course hierarchy: subjects → topics → content (like Python server)
+        const ccCourseId = url.searchParams.get('course_id');
+        if (!ccCourseId) {
+          return new Response(
+            JSON.stringify({ error: 'Missing course_id' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log(`Fetching full course content for: ${ccCourseId}`);
+
+        // Step 1: Fetch subjects
+        const subjectsRes = await fetch(`${CONTENT_API}/course/${ccCourseId}/subjects`, {
+          headers: { 'Accept': 'application/json', 'User-Agent': 'StudyPro/1.0' },
+        });
+        if (!subjectsRes.ok) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to fetch subjects' }),
+            { status: subjectsRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const subjectsData = await subjectsRes.json();
+        const subjects: { id: string; title?: string; name?: string }[] = subjectsData.data || subjectsData.result || [];
+
+        interface ContentItem { id: string; title: string; url: string; }
+        interface TopicEntry { id: string; name: string; contents: ContentItem[]; }
+        interface SubjectEntry { id: string; name: string; topics: TopicEntry[]; }
+
+        const courseStructure: { course_id: string; subjects: SubjectEntry[] } = {
+          course_id: ccCourseId,
+          subjects: [],
+        };
+
+        // Step 2 & 3: For each subject, fetch topics; for each topic, fetch content
+        for (const subj of subjects) {
+          const subjId = String(subj.id);
+          const subjName = subj.title || subj.name || `Subject ${subjId}`;
+
+          const subjectEntry: SubjectEntry = { id: subjId, name: subjName, topics: [] };
+
+          try {
+            const topicsRes = await fetch(
+              `${CONTENT_API}/course/${ccCourseId}/subject/${subjId}/topics`,
+              { headers: { 'Accept': 'application/json', 'User-Agent': 'StudyPro/1.0' } }
+            );
+            if (topicsRes.ok) {
+              const topicsData = await topicsRes.json();
+              const topics: { id: string; title?: string; name?: string }[] = topicsData.data || topicsData.result || [];
+
+              for (const topic of topics) {
+                const topicId = String(topic.id);
+                const topicName = topic.title || topic.name || `Topic ${topicId}`;
+                const topicEntry: TopicEntry = { id: topicId, name: topicName, contents: [] };
+
+                try {
+                  const contentRes = await fetch(
+                    `${CONTENT_API}/course/${ccCourseId}/subject/${subjId}/topic/${topicId}/content`,
+                    { headers: { 'Accept': 'application/json', 'User-Agent': 'StudyPro/1.0' } }
+                  );
+                  if (contentRes.ok) {
+                    const contentData = await contentRes.json();
+                    const contents: { id: string; title?: string; name?: string; url?: string }[] =
+                      contentData.data || contentData.result || [];
+
+                    for (const c of contents) {
+                      topicEntry.contents.push({
+                        id: String(c.id),
+                        title: c.title || c.name || `Content ${c.id}`,
+                        url: c.url || '',
+                      });
+                    }
+                  }
+                } catch (e) {
+                  console.warn(`Error fetching content for topic ${topicId}:`, e);
+                }
+
+                subjectEntry.topics.push(topicEntry);
+              }
+            }
+          } catch (e) {
+            console.warn(`Error fetching topics for subject ${subjId}:`, e);
+          }
+
+          courseStructure.subjects.push(subjectEntry);
+        }
+
+        console.log(
+          `Course ${ccCourseId}: ${courseStructure.subjects.length} subjects, ` +
+          `${courseStructure.subjects.reduce((a, s) => a + s.topics.length, 0)} topics, ` +
+          `${courseStructure.subjects.reduce((a, s) => a + s.topics.reduce((b, t) => b + t.contents.length, 0), 0)} contents`
+        );
+
+        return new Response(
+          JSON.stringify({ status: 'success', data: courseStructure }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       default:
         return new Response(
           JSON.stringify({ error: 'Unknown endpoint' }),

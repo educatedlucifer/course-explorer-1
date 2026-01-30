@@ -8,6 +8,7 @@ import {
   Subject, 
   Topic, 
   Content,
+  FullCourseContent,
   ApiResponse 
 } from '@/types/api';
 
@@ -93,6 +94,14 @@ export async function fetchContent(courseId: string, subjectId: string, topicId:
     course_id: courseId,
     subject_id: subjectId,
     topic_id: topicId
+  });
+  return data.data;
+}
+
+export async function fetchFullCourseContent(courseId: string): Promise<FullCourseContent> {
+  const data: ApiResponse<FullCourseContent> = await callApi({ 
+    endpoint: 'course-content',
+    course_id: courseId
   });
   return data.data;
 }
