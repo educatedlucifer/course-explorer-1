@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const BATCHES_API = 'https://utk-batches-api-63bad375dd0d.herokuapp.com/api';
+const BATCHES_API = 'https://utk-batches-apih-45a803b3037e.herokuapp.com/api';
 const CONTENT_API = 'https://utk-web-api-5163e92c9014.herokuapp.com/api';
 
 serve(async (req) => {
