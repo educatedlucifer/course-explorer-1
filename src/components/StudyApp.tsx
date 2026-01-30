@@ -443,7 +443,7 @@ export function StudyApp() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="flex flex-col items-center justify-center min-h-[60vh]"
                 >
-                  <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+                  <div className="flex flex-col md:flex-row flex-wrap items-center justify-center gap-6">
                     {/* Utkarsh Card */}
                     <motion.div
                       whileHover={{ scale: 1.05, y: -10 }}
@@ -508,6 +508,41 @@ export function StudyApp() {
                           </p>
                           <div className="flex items-center justify-center gap-2 text-blue-600">
                             <span className="text-sm font-medium">Click to Browse</span>
+                            <ChevronRight className="w-4 h-4 animate-pulse" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+
+                    {/* Unacademy Card */}
+                    <motion.div
+                      whileHover={{ scale: 1.05, y: -10 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => window.location.assign('/unacademy/index.html')}
+                      className="cursor-pointer"
+                    >
+                      <Card variant="interactive" className="w-80 md:w-96 overflow-hidden group">
+                        <div className="relative h-48 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center">
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent)]" />
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 0.5, type: "spring" }}
+                            className="w-24 h-24 rounded-full bg-card/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center"
+                          >
+                            <span className="text-4xl font-bold text-white">UA</span>
+                          </motion.div>
+                        </div>
+
+                        <CardContent className="text-center py-6 space-y-4">
+                          <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
+                            Unacademy
+                          </h2>
+                          <p className="text-muted-foreground">
+                            Explore Unacademy Advance
+                          </p>
+                          <div className="flex items-center justify-center gap-2 text-emerald-600">
+                            <span className="text-sm font-medium">Click to Open</span>
                             <ChevronRight className="w-4 h-4 animate-pulse" />
                           </div>
                         </CardContent>
