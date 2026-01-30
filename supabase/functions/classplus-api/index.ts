@@ -2,8 +2,35 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+async function fetchCoursesStoreInfo(orgCode: string): Promise<{ hash: string | null; name: string | null }> {
+  try {
+    const storeRes = await fetch(`https://${orgCode}.courses.store`, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+    });
+
+    if (!storeRes.ok) {
+      console.log(`courses.store fetch not ok: ${storeRes.status}`);
+      return { hash: null, name: null };
+    }
+
+    const html = await storeRes.text();
+    const hashMatch = html.match(/"hash"\s*:\s*"(.*?)"/);
+    const nameMatch = html.match(/"name"\s*:\s*"(.*?)"/);
+    return {
+      hash: hashMatch?.[1] || null,
+      name: nameMatch?.[1] || null,
+    };
+  } catch (e) {
+    console.log("courses.store fetch failed:", e);
+    return { hash: null, name: null };
+  }
+}
 
 // Common headers for ClassPlus API
 const getHeaders = (token: string | null = null) => {
@@ -120,8 +147,15 @@ serve(async (req) => {
         });
       }
 
-      // Get hash from tutor info API
-      let hash = null;
+      // Try to get hash from courses.store first (matches your reference implementation)
+      let storeName: string | null = null;
+      let hash: string | null = null;
+
+      const storeInfo = await fetchCoursesStoreInfo(orgCode);
+      hash = storeInfo.hash;
+      storeName = storeInfo.name;
+
+      // Fallback: Get hash from tutor info API
       try {
         const tutorRes = await fetch(
           `https://api.classplusapp.com/v2/course/preview/tutor/info?orgId=${orgData.data.orgId}`,
@@ -130,7 +164,7 @@ serve(async (req) => {
         
         if (tutorRes.ok) {
           const tutorData = await tutorRes.json();
-          hash = tutorData?.data?.hash || tutorData?.data?.courses?.[0]?.hash || null;
+          hash = hash || tutorData?.data?.hash || tutorData?.data?.courses?.[0]?.hash || null;
         }
       } catch (e) {
         console.log('Tutor info fallback failed:', e);
@@ -157,7 +191,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         success: true,
         orgId: orgData.data.orgId,
-        orgName: orgData.data.orgName || orgCode,
+        orgName: orgData.data.orgName || storeName || orgCode,
         hash: hash
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
