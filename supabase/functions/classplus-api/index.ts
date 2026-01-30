@@ -5,14 +5,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const coursesStoreClient = Deno.createHttpClient({
-  dangerouslyIgnoreCertificateErrors: ['courses.store'],
-});
+// Note: courses.store scraping uses standard fetch without custom TLS options
 
 async function fetchCoursesStoreInfo(orgCode: string): Promise<{ hash: string | null; name: string | null }> {
   try {
     const storeRes = await fetch(`https://${orgCode}.courses.store`, {
-      client: coursesStoreClient,
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",

@@ -66,6 +66,174 @@ serve(async (req) => {
         apiUrl = `${CONTENT_API}/course/${courseIdC}/subject/${subjectIdC}/topic/${topicId}/content`;
         break;
 
+      // Unacademy endpoints
+      case 'unacademy-goals': {
+        console.log('Fetching Unacademy goals...');
+        const goalsRes = await fetch('https://unknownkil.github.io/Goal_unad-json/goals.json', {
+          headers: { 'Accept': 'application/json', 'User-Agent': 'StudyPro/1.0' },
+        });
+        if (!goalsRes.ok) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to fetch goals' }),
+            { status: goalsRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const goalsData = await goalsRes.json();
+        console.log(`Fetched ${goalsData.length || 0} goals`);
+        return new Response(
+          JSON.stringify({ status: 'success', data: goalsData }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'unacademy-batches': {
+        const goalId = url.searchParams.get('goal_id');
+        const offset = url.searchParams.get('offset') || '0';
+        const limit = url.searchParams.get('limit') || '20';
+        if (!goalId) {
+          return new Response(
+            JSON.stringify({ error: 'Missing goal_id' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        console.log(`Fetching batches for goal: ${goalId}`);
+        const batchesUrl = `https://api-frontend.unacademy.com/api/v1/batch/lists/filter/?goal_uid=${goalId}&limit=${limit}&offset=${offset}&type=0`;
+        const batchesRes = await fetch(batchesUrl, {
+          headers: { 
+            'Accept': 'application/json', 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' 
+          },
+        });
+        if (!batchesRes.ok) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to fetch batches' }),
+            { status: batchesRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const batchesData = await batchesRes.json();
+        console.log(`Fetched ${batchesData.results?.length || 0} batches`);
+        return new Response(
+          JSON.stringify({ status: 'success', data: batchesData }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'unacademy-batch-info': {
+        const batchId = url.searchParams.get('batch_id');
+        if (!batchId) {
+          return new Response(
+            JSON.stringify({ error: 'Missing batch_id' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        console.log(`Fetching batch info: ${batchId}`);
+        const infoUrl = `https://api-frontend.unacademy.com/api/v1/batch/${batchId}/`;
+        const infoRes = await fetch(infoUrl, {
+          headers: { 
+            'Accept': 'application/json', 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' 
+          },
+        });
+        if (!infoRes.ok) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to fetch batch info' }),
+            { status: infoRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const infoData = await infoRes.json();
+        return new Response(
+          JSON.stringify({ status: 'success', data: infoData }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'unacademy-schedule': {
+        const batchIdS = url.searchParams.get('batch_id');
+        if (!batchIdS) {
+          return new Response(
+            JSON.stringify({ error: 'Missing batch_id' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        console.log(`Fetching schedule for batch: ${batchIdS}`);
+        const scheduleUrl = `https://api.unacademy.com/api/v1/batch/${batchIdS}/schedule/?limit=1000&offset=None&past=False&rank=1&timezone_difference=330`;
+        const scheduleRes = await fetch(scheduleUrl, {
+          headers: { 
+            'Accept': 'application/json', 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' 
+          },
+        });
+        if (!scheduleRes.ok) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to fetch schedule' }),
+            { status: scheduleRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const scheduleData = await scheduleRes.json();
+        
+        // Extract lessons from schedule with video/PDF URLs
+        interface LessonItem {
+          id: string;
+          title: string;
+          date: string;
+          videoUrl: string;
+          pdfUrl: string;
+          author: string;
+        }
+        const lessons: LessonItem[] = [];
+        const processedIds = new Set<string>();
+        
+        for (const item of (scheduleData.results || [])) {
+          try {
+            const liveClass = item?.properties?.liveClass;
+            if (liveClass) {
+              const lessonId = liveClass.uid || item.uid;
+              if (processedIds.has(lessonId)) continue;
+              processedIds.add(lessonId);
+              
+              const slidesPdf = liveClass.slidesPdf;
+              let videoUrl = '';
+              let pdfUrl = '';
+              
+              if (slidesPdf?.withAnnotation) {
+                pdfUrl = slidesPdf.withAnnotation;
+                // Extract video ID from PDF URL
+                const parts = pdfUrl.split('/');
+                const videoId = parts[parts.length - 2] || parts[parts.length - 1]?.split('.')[0];
+                if (videoId) {
+                  videoUrl = `https://uamedia.uacdn.net/lesson-raw/${videoId}/output.webm`;
+                }
+              }
+              
+              let formattedDate = 'Unknown';
+              if (liveClass.liveAt) {
+                const d = new Date(liveClass.liveAt);
+                formattedDate = `${d.getDate().toString().padStart(2,'0')}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getFullYear()}`;
+              }
+              
+              const author = ((liveClass.author?.firstName || '') + ' ' + (liveClass.author?.lastName || '')).trim();
+              
+              lessons.push({
+                id: lessonId,
+                title: item.properties?.title || liveClass.title || 'Untitled',
+                date: formattedDate,
+                videoUrl,
+                pdfUrl,
+                author: author || 'Unknown',
+              });
+            }
+          } catch (e) {
+            console.warn('Error processing lesson:', e);
+          }
+        }
+        
+        console.log(`Extracted ${lessons.length} lessons from schedule`);
+        return new Response(
+          JSON.stringify({ status: 'success', data: { lessons, total: lessons.length } }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       case 'course-content': {
         // Full course hierarchy: subjects → topics → content (like Python server)
         const ccCourseId = url.searchParams.get('course_id');
