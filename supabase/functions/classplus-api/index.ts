@@ -101,7 +101,17 @@ serve(async (req) => {
       const orgResponse = await fetch(`https://api.classplusapp.com/v2/orgs/${orgCode}`, {
         headers: { 'User-Agent': 'Mobile-Android' }
       });
-      const orgData = await orgResponse.json();
+      
+      let orgData;
+      try {
+        orgData = await orgResponse.json();
+      } catch (e) {
+        console.log('Failed to parse org response:', e);
+        return new Response(JSON.stringify({ error: 'Organization not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       if (orgData.status !== 'success') {
         return new Response(JSON.stringify({ error: orgData.message || 'Organization not found' }), {
@@ -117,11 +127,32 @@ serve(async (req) => {
           `https://api.classplusapp.com/v2/course/preview/tutor/info?orgId=${orgData.data.orgId}`,
           { headers: { 'User-Agent': 'Mobile-Android', 'region': 'IN' } }
         );
-        const tutorData = await tutorRes.json();
-        hash = tutorData?.data?.hash || tutorData?.data?.courses?.[0]?.hash || null;
+        
+        if (tutorRes.ok) {
+          const tutorData = await tutorRes.json();
+          hash = tutorData?.data?.hash || tutorData?.data?.courses?.[0]?.hash || null;
+        }
       } catch (e) {
         console.log('Tutor info fallback failed:', e);
       }
+
+      // If no hash found, try alternative endpoint
+      if (!hash) {
+        try {
+          const altRes = await fetch(
+            `https://api.classplusapp.com/v2/course/preview/content/info?orgCode=${orgCode}`,
+            { headers: { 'User-Agent': 'Mobile-Android', 'region': 'IN', 'Api-Version': '22' } }
+          );
+          if (altRes.ok) {
+            const altData = await altRes.json();
+            hash = altData?.data?.hash || null;
+          }
+        } catch (e) {
+          console.log('Alt hash fetch failed:', e);
+        }
+      }
+
+      console.log(`Org ${orgCode} found: id=${orgData.data.orgId}, name=${orgData.data.orgName}, hash=${hash}`);
 
       return new Response(JSON.stringify({
         success: true,
@@ -138,9 +169,21 @@ serve(async (req) => {
       const orgCode = url.searchParams.get("orgCode");
       const hash = url.searchParams.get("hash");
 
-      if (!orgCode || !hash) {
-        return new Response(JSON.stringify({ error: "orgCode and hash are required" }), {
+      if (!orgCode) {
+        return new Response(JSON.stringify({ error: "orgCode is required" }), {
           status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // If no hash, return empty array
+      if (!hash || hash === 'null') {
+        return new Response(JSON.stringify({
+          success: true,
+          total: 0,
+          batches: [],
+          message: "No courses available for this organization"
+        }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
