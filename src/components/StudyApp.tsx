@@ -14,11 +14,13 @@ import {
   Layers,
   Target,
   Home,
-  Zap
+  Zap,
+  Library
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { TopicContentView } from './TopicContentView';
+import { FullCourseContentView } from './FullCourseContentView';
 import { 
   fetchMasterCategories, 
   fetchSubCategories, 
@@ -26,7 +28,8 @@ import {
   fetchCourses,
   fetchSubjects,
   fetchTopics,
-  fetchContent
+  fetchContent,
+  fetchFullCourseContent
 } from '@/services/api';
 import { 
   MasterCategory, 
@@ -35,10 +38,11 @@ import {
   Course,
   Subject,
   Topic,
-  Content
+  Content,
+  FullCourseContent
 } from '@/types/api';
 
-type Step = 'master' | 'sub' | 'final' | 'courses' | 'subjects' | 'topics' | 'content';
+type Step = 'master' | 'sub' | 'final' | 'courses' | 'subjects' | 'topics' | 'content' | 'all-content';
 
 interface BreadcrumbItem {
   step: Step;
@@ -59,6 +63,7 @@ export function StudyApp() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [contents, setContents] = useState<Content[]>([]);
+  const [fullCourseContent, setFullCourseContent] = useState<FullCourseContent | null>(null);
   
   // Selected items
   const [selectedMaster, setSelectedMaster] = useState<MasterCategory | null>(null);
@@ -152,6 +157,21 @@ export function StudyApp() {
     setSelectedContent(content);
   };
 
+  const handleViewAllContent = async () => {
+    if (!selectedCourse) return;
+    setLoading(true);
+    setSelectedContent(null);
+    try {
+      const data = await fetchFullCourseContent(selectedCourse.id);
+      setFullCourseContent(data);
+      setCurrentStep('all-content');
+      setBreadcrumbs(prev => [...prev.slice(0, 5), { step: 'all-content', label: 'All Content', id: 'all' }]);
+    } catch (error) {
+      console.error('Failed to fetch full course content:', error);
+    }
+    setLoading(false);
+  };
+
   const goBack = () => {
     if (currentStep === 'sub') {
       setCurrentStep('master');
@@ -172,6 +192,11 @@ export function StudyApp() {
       setCurrentStep('topics');
       setBreadcrumbs(prev => prev.slice(0, 6));
       setSelectedContent(null);
+    } else if (currentStep === 'all-content') {
+      setCurrentStep('subjects');
+      setBreadcrumbs(prev => prev.slice(0, 5));
+      setSelectedContent(null);
+      setFullCourseContent(null);
     }
   };
 
@@ -213,6 +238,7 @@ export function StudyApp() {
       case 'subjects': return 'Course Subjects';
       case 'topics': return 'Topics';
       case 'content': return 'Study Materials';
+      case 'all-content': return 'All Course Content';
       default: return '';
     }
   };
@@ -226,6 +252,7 @@ export function StudyApp() {
       case 'subjects': return 'Explore subjects in this course';
       case 'topics': return 'Select a topic to start learning';
       case 'content': return 'Access video lectures and study materials';
+      case 'all-content': return 'Browse all videos and PDFs in this course';
       default: return '';
     }
   };
@@ -591,43 +618,63 @@ export function StudyApp() {
 
               {/* Subjects */}
               {currentStep === 'subjects' && (
-                <motion.div
-                  key="subjects"
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-                >
-                  {subjects.map((subject, index) => (
-                    <motion.div key={subject.id} variants={itemVariants}>
-                      <Card 
-                        variant="interactive"
-                        className="group cursor-pointer"
-                        onClick={() => handleSubjectSelect(subject)}
-                      >
-                        <CardContent className="p-5">
-                          <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
-                              <span className="font-bold text-primary">{index + 1}</span>
+                <div className="space-y-6">
+                  {/* View All Content Button */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-center"
+                  >
+                    <Button
+                      variant="hero"
+                      size="lg"
+                      onClick={handleViewAllContent}
+                      className="gap-3"
+                    >
+                      <Library className="w-5 h-5" />
+                      View All Course Content
+                      <span className="text-xs opacity-80">(Videos + PDFs)</span>
+                    </Button>
+                  </motion.div>
+
+                  <motion.div
+                    key="subjects"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                  >
+                    {subjects.map((subject, index) => (
+                      <motion.div key={subject.id} variants={itemVariants}>
+                        <Card 
+                          variant="interactive"
+                          className="group cursor-pointer"
+                          onClick={() => handleSubjectSelect(subject)}
+                        >
+                          <CardContent className="p-5">
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
+                                <span className="font-bold text-primary">{index + 1}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold group-hover:text-primary transition-colors line-clamp-2">
+                                  {subject.title}
+                                </h3>
+                              </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold group-hover:text-primary transition-colors line-clamp-2">
-                                {subject.title}
-                              </h3>
+                            <div className="flex items-center justify-end mt-4">
+                              <span className="text-sm text-muted-foreground group-hover:text-primary transition-colors flex items-center gap-1">
+                                View Topics
+                                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                              </span>
                             </div>
-                          </div>
-                          <div className="flex items-center justify-end mt-4">
-                            <span className="text-sm text-muted-foreground group-hover:text-primary transition-colors flex items-center gap-1">
-                              View Topics
-                              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                            </span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </motion.div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </div>
               )}
 
               {/* Topics */}
@@ -668,6 +715,15 @@ export function StudyApp() {
               {currentStep === 'content' && (
                 <TopicContentView
                   contents={contents}
+                  selectedContent={selectedContent}
+                  onSelectContent={handleContentSelect}
+                />
+              )}
+
+              {/* All Course Content */}
+              {currentStep === 'all-content' && fullCourseContent && (
+                <FullCourseContentView
+                  courseContent={fullCourseContent}
                   selectedContent={selectedContent}
                   onSelectContent={handleContentSelect}
                 />
