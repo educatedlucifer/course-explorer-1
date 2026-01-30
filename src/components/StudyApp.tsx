@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
+import { TopicContentView } from './TopicContentView';
 import { 
   fetchMasterCategories, 
   fetchSubCategories, 
@@ -45,61 +46,6 @@ interface BreadcrumbItem {
   id?: string | number;
 }
 
-type ContentKind = 'video' | 'youtube' | 'pdf' | 'other';
-
-function normalizeContentUrl(raw?: string): string | undefined {
-  if (!raw) return undefined;
-  const trimmed = raw.trim();
-  const badEmbedPrefix = 'https://www.youtube.com/embed/';
-  // Some API items incorrectly include an embed prefix before a direct asset URL.
-  if (trimmed.startsWith(badEmbedPrefix)) {
-    const rest = trimmed.slice(badEmbedPrefix.length);
-    if (rest.startsWith('http://') || rest.startsWith('https://')) return rest;
-  }
-  return trimmed;
-}
-
-function getContentKind(url?: string): ContentKind {
-  if (!url) return 'other';
-  const u = url.toLowerCase();
-
-  // PDFs first (some are hosted on CloudFront as well)
-  if (u.includes('.pdf')) return 'pdf';
-
-  // YouTube
-  if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
-
-  // Video (common formats + known CDNs)
-  if (
-    u.includes('.mp4') ||
-    u.includes('.webm') ||
-    u.includes('.m3u8') ||
-    u.includes('cloudfront')
-  ) {
-    return 'video';
-  }
-
-  return 'other';
-}
-
-function toYouTubeEmbedUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    if (u.hostname.includes('youtu.be')) {
-      const id = u.pathname.replace('/', '');
-      return id ? `https://www.youtube.com/embed/${id}` : null;
-    }
-
-    if (u.hostname.includes('youtube.com')) {
-      if (u.pathname.startsWith('/embed/')) return url;
-      const v = u.searchParams.get('v');
-      return v ? `https://www.youtube.com/embed/${v}` : null;
-    }
-  } catch {
-    // ignore
-  }
-  return null;
-}
 
 export function StudyApp() {
   const [currentStep, setCurrentStep] = useState<Step>('master');
@@ -193,6 +139,8 @@ export function StudyApp() {
     if (!selectedCourse || !selectedSubject) return;
     setLoading(true);
     setSelectedTopic(topic);
+    // Prevent stale selection from the previous topic making the list look "incomplete".
+    setSelectedContent(null);
     const data = await fetchContent(selectedCourse.id, selectedSubject.id, topic.id);
     setContents(data);
     setCurrentStep('content');
@@ -718,242 +666,11 @@ export function StudyApp() {
 
               {/* Content */}
               {currentStep === 'content' && (
-                <div className="space-y-6">
-                  {/* Content Tabs - Videos & PDFs */}
-                  {(() => {
-                    const kindOf = (c: Content): ContentKind => {
-                      const normalizedUrl = normalizeContentUrl(c.url);
-                      return getContentKind(normalizedUrl);
-                    };
-
-                    const videos = contents.filter((c) => {
-                      const k = kindOf(c);
-                      return k === 'video' || k === 'youtube';
-                    });
-                    const pdfs = contents.filter((c) => kindOf(c) === 'pdf');
-                    const others = contents.filter((c) => kindOf(c) === 'other');
-
-                    const selectedUrl = selectedContent ? normalizeContentUrl(selectedContent.url) : undefined;
-                    const selectedKind = getContentKind(selectedUrl);
-                    const selectedYouTubeEmbed = selectedUrl ? toYouTubeEmbedUrl(selectedUrl) : null;
-                    
-                    return (
-                      <>
-                        {/* Videos Section */}
-                        {videos.length > 0 && (
-                          <div>
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                                <Video className="w-5 h-5 text-primary" />
-                              </div>
-                              <div>
-                                <h3 className="font-semibold text-lg">Video Lectures</h3>
-                                <p className="text-sm text-muted-foreground">{videos.length} videos available</p>
-                              </div>
-                            </div>
-                            
-                            <div className="grid lg:grid-cols-3 gap-6">
-                              {/* Video List */}
-                              <motion.div
-                                variants={containerVariants}
-                                initial="hidden"
-                                animate="visible"
-                                className={`space-y-3 ${selectedContent && (selectedKind === 'video' || selectedKind === 'youtube') ? 'lg:col-span-1 max-h-[600px] overflow-y-auto pr-2' : 'lg:col-span-3'}`}
-                              >
-                                {videos.map((content, index) => (
-                                  <motion.div key={`${content.id}-${index}`} variants={itemVariants}>
-                                    <motion.div
-                                      className={`group cursor-pointer rounded-xl border transition-all duration-300 ${
-                                        selectedContent?.id === content.id 
-                                          ? 'border-primary bg-gradient-to-r from-primary/10 to-secondary/5' 
-                                          : 'border-border/50 bg-card/50 hover:border-primary/50 hover:bg-card'
-                                      }`}
-                                      onClick={() => handleContentSelect(content)}
-                                      whileHover={{ scale: 1.01 }}
-                                      whileTap={{ scale: 0.99 }}
-                                    >
-                                      <div className="p-4 flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                          selectedContent?.id === content.id 
-                                            ? 'bg-gradient-to-br from-primary to-secondary text-primary-foreground' 
-                                            : 'bg-primary/10'
-                                        }`}>
-                                          <Play className="w-5 h-5" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <h3 className={`font-medium ${
-                                            selectedContent?.id === content.id ? 'text-primary' : 'group-hover:text-primary'
-                                          } transition-colors line-clamp-2`}>
-                                            {content.title}
-                                          </h3>
-                                          <p className="text-xs text-muted-foreground mt-1">
-                                            {kindOf(content) === 'youtube' ? 'YouTube Video' : 'Video Lecture'}
-                                          </p>
-                                        </div>
-                                        {selectedContent?.id === content.id && (
-                                          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                                        )}
-                                      </div>
-                                    </motion.div>
-                                  </motion.div>
-                                ))}
-                              </motion.div>
-
-                              {/* Video / YouTube Player */}
-                              {selectedContent && (selectedKind === 'video' || selectedKind === 'youtube') && (
-                                <motion.div
-                                  initial={{ opacity: 0, x: 20 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  className="lg:col-span-2 lg:sticky lg:top-24 h-fit"
-                                >
-                                  <div className="rounded-2xl overflow-hidden border border-border/50 bg-card">
-                                    <div className="aspect-video bg-black relative">
-                                      {selectedKind === 'video' && selectedUrl && (
-                                        <video
-                                          key={`${selectedContent.id}-${selectedUrl}`}
-                                          src={selectedUrl}
-                                          controls
-                                          className="w-full h-full"
-                                          controlsList="nodownload"
-                                        />
-                                      )}
-
-                                      {selectedKind === 'youtube' && selectedUrl && (
-                                        <iframe
-                                          key={`${selectedContent.id}-${selectedUrl}`}
-                                          className="w-full h-full"
-                                          src={selectedYouTubeEmbed ?? selectedUrl}
-                                          title={selectedContent.title}
-                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                          allowFullScreen
-                                        />
-                                      )}
-                                    </div>
-                                    <div className="p-4 border-t border-border/50">
-                                      <h2 className="font-semibold text-lg text-gradient">{selectedContent.title}</h2>
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* PDFs Section */}
-                        {pdfs.length > 0 && (
-                          <div className={videos.length > 0 ? 'mt-10 pt-8 border-t border-border/50' : ''}>
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center">
-                                <FileText className="w-5 h-5 text-accent" />
-                              </div>
-                              <div>
-                                <h3 className="font-semibold text-lg">Study Materials (PDF)</h3>
-                                <p className="text-sm text-muted-foreground">{pdfs.length} documents available</p>
-                              </div>
-                            </div>
-                            
-                            <motion.div
-                              variants={containerVariants}
-                              initial="hidden"
-                              animate="visible"
-                              className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                            >
-                              {pdfs.map((content, index) => (
-                                <motion.div key={`${content.id}-${index}`} variants={itemVariants}>
-                                  <motion.a
-                                    href={normalizeContentUrl(content.url)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="group block rounded-xl border border-border/50 bg-card/50 hover:border-accent/50 hover:bg-card transition-all duration-300 overflow-hidden"
-                                    whileHover={{ scale: 1.02, y: -3 }}
-                                    whileTap={{ scale: 0.98 }}
-                                  >
-                                    <div className="p-5">
-                                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center mb-4 group-hover:from-accent/30 group-hover:to-accent/10 transition-all">
-                                        <FileText className="w-7 h-7 text-accent" />
-                                      </div>
-                                      <h3 className="font-medium text-sm group-hover:text-accent transition-colors line-clamp-2 mb-2">
-                                        {content.title}
-                                      </h3>
-                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <span className="px-2 py-1 rounded-md bg-accent/10 text-accent">PDF</span>
-                                        <span>Click to view</span>
-                                      </div>
-                                    </div>
-                                  </motion.a>
-                                </motion.div>
-                              ))}
-                            </motion.div>
-                          </div>
-                        )}
-
-                        {/* Other Section */}
-                        {others.length > 0 && (
-                          <div className={(videos.length > 0 || pdfs.length > 0) ? 'mt-10 pt-8 border-t border-border/50' : ''}>
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="w-10 h-10 rounded-xl bg-muted/50 border border-border/50 flex items-center justify-center">
-                                <BookOpen className="w-5 h-5 text-foreground" />
-                              </div>
-                              <div>
-                                <h3 className="font-semibold text-lg">Other Resources</h3>
-                                <p className="text-sm text-muted-foreground">{others.length} items available</p>
-                              </div>
-                            </div>
-
-                            <motion.div
-                              variants={containerVariants}
-                              initial="hidden"
-                              animate="visible"
-                              className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                            >
-                              {others.map((content, index) => {
-                                const url = normalizeContentUrl(content.url);
-                                return (
-                                  <motion.div key={`${content.id}-${index}`} variants={itemVariants}>
-                                    <motion.a
-                                      href={url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="group block rounded-xl border border-border/50 bg-card/50 hover:border-primary/50 hover:bg-card transition-all duration-300 overflow-hidden"
-                                      whileHover={{ scale: 1.02, y: -3 }}
-                                      whileTap={{ scale: 0.98 }}
-                                    >
-                                      <div className="p-5">
-                                        <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-all">
-                                          <BookOpen className="w-7 h-7 text-primary" />
-                                        </div>
-                                        <h3 className="font-medium text-sm group-hover:text-primary transition-colors line-clamp-2 mb-2">
-                                          {content.title}
-                                        </h3>
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                          <span className="px-2 py-1 rounded-md bg-muted/60 text-foreground">Link</span>
-                                          <span>Open resource</span>
-                                        </div>
-                                      </div>
-                                    </motion.a>
-                                  </motion.div>
-                                );
-                              })}
-                            </motion.div>
-                          </div>
-                        )}
-
-                        {/* No content message */}
-                        {videos.length === 0 && pdfs.length === 0 && others.length === 0 && (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="text-center py-20"
-                          >
-                            <BookOpen className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-                            <h3 className="font-semibold text-xl mb-2">No Content Available</h3>
-                            <p className="text-muted-foreground">This topic has no videos or study materials yet.</p>
-                          </motion.div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
+                <TopicContentView
+                  contents={contents}
+                  selectedContent={selectedContent}
+                  onSelectContent={handleContentSelect}
+                />
               )}
 
               {/* Empty State */}
