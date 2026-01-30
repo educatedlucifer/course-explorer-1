@@ -21,6 +21,7 @@ import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { TopicContentView } from './TopicContentView';
 import { FullCourseContentView } from './FullCourseContentView';
+import { ClassPlusBrowser } from './ClassPlusBrowser';
 import { 
   fetchMasterCategories, 
   fetchSubCategories, 
@@ -42,7 +43,7 @@ import {
   FullCourseContent
 } from '@/types/api';
 
-type Step = 'welcome' | 'master' | 'sub' | 'final' | 'courses' | 'subjects' | 'topics' | 'content' | 'all-content';
+type Step = 'welcome' | 'classplus' | 'master' | 'sub' | 'final' | 'courses' | 'subjects' | 'topics' | 'content' | 'all-content';
 
 interface BreadcrumbItem {
   step: Step;
@@ -433,7 +434,7 @@ export function StudyApp() {
           {/* Content */}
           {!loading && (
             <AnimatePresence mode="wait">
-              {/* Welcome Card */}
+              {/* Welcome Cards */}
               {currentStep === 'welcome' && (
                 <motion.div
                   key="welcome"
@@ -442,39 +443,77 @@ export function StudyApp() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="flex flex-col items-center justify-center min-h-[60vh]"
                 >
-                  <motion.div
-                    whileHover={{ scale: 1.05, y: -10 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleWelcomeClick}
-                    className="cursor-pointer"
-                  >
-                    <Card variant="interactive" className="w-80 md:w-96 overflow-hidden group">
-                      <div className="relative h-48 bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center">
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent)]" />
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 0.3, type: "spring" }}
-                          className="w-24 h-24 rounded-full bg-card/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center"
-                        >
-                          <span className="text-4xl font-bold text-white">U</span>
-                        </motion.div>
-                      </div>
-                      
-                      <CardContent className="text-center py-6 space-y-4">
-                        <h2 className="text-2xl md:text-3xl font-bold text-gradient">
-                          Utkarsh
-                        </h2>
-                        <p className="text-muted-foreground">
-                          Your Gateway to Success
-                        </p>
-                        <div className="flex items-center justify-center gap-2 text-primary">
-                          <span className="text-sm font-medium">Click to Explore Courses</span>
-                          <ChevronRight className="w-4 h-4 animate-pulse" />
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+                    {/* Utkarsh Card */}
+                    <motion.div
+                      whileHover={{ scale: 1.05, y: -10 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleWelcomeClick}
+                      className="cursor-pointer"
+                    >
+                      <Card variant="interactive" className="w-80 md:w-96 overflow-hidden group">
+                        <div className="relative h-48 bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center">
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent)]" />
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 0.3, type: "spring" }}
+                            className="w-24 h-24 rounded-full bg-card/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center"
+                          >
+                            <span className="text-4xl font-bold text-white">U</span>
+                          </motion.div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                        
+                        <CardContent className="text-center py-6 space-y-4">
+                          <h2 className="text-2xl md:text-3xl font-bold text-gradient">
+                            Utkarsh
+                          </h2>
+                          <p className="text-muted-foreground">
+                            Your Gateway to Success
+                          </p>
+                          <div className="flex items-center justify-center gap-2 text-primary">
+                            <span className="text-sm font-medium">Click to Explore Courses</span>
+                            <ChevronRight className="w-4 h-4 animate-pulse" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+
+                    {/* ClassPlus Card */}
+                    <motion.div
+                      whileHover={{ scale: 1.05, y: -10 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setCurrentStep('classplus')}
+                      className="cursor-pointer"
+                    >
+                      <Card variant="interactive" className="w-80 md:w-96 overflow-hidden group">
+                        <div className="relative h-48 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 flex items-center justify-center">
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent)]" />
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 0.4, type: "spring" }}
+                            className="w-24 h-24 rounded-full bg-card/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center"
+                          >
+                            <GraduationCap className="w-12 h-12 text-white" />
+                          </motion.div>
+                        </div>
+                        
+                        <CardContent className="text-center py-6 space-y-4">
+                          <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                            ClassPlus
+                          </h2>
+                          <p className="text-muted-foreground">
+                            Access Your Courses Anywhere
+                          </p>
+                          <div className="flex items-center justify-center gap-2 text-blue-600">
+                            <span className="text-sm font-medium">Click to Browse</span>
+                            <ChevronRight className="w-4 h-4 animate-pulse" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </div>
                   
                   <motion.p
                     initial={{ opacity: 0 }}
@@ -482,8 +521,21 @@ export function StudyApp() {
                     transition={{ delay: 0.5 }}
                     className="mt-8 text-muted-foreground text-center"
                   >
-                    Tap the card to begin your learning journey
+                    Tap a card to begin your learning journey
                   </motion.p>
+                </motion.div>
+              )}
+
+              {/* ClassPlus Browser */}
+              {currentStep === 'classplus' && (
+                <motion.div
+                  key="classplus"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50"
+                >
+                  <ClassPlusBrowser onBack={() => setCurrentStep('welcome')} />
                 </motion.div>
               )}
 
